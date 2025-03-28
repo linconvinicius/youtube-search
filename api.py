@@ -1,7 +1,6 @@
-import os
+import httplib2
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
-import httplib2
 
 # Classe para a API do YouTube
 class YouTubeAPI:
