@@ -45,7 +45,7 @@ def main():
         "UCYizWsZp_z-o3G_jKxYmFYA",  # Junior Nannetti
         "UCYizWsZp_z-o3G_jKxYmFYA"   # MotoAdventure
     ]
-    max_resultados = 5
+    max_resultados = 29
 
     # Primeira busca: busca na API e armazena no cache
     print("Primeira busca...")
