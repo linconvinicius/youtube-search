@@ -49,13 +49,13 @@ CHANNELS = [
     "garagemdobellotetv",  # Garagem do Bellote
     "KS1951",  # Karina Simões
     "FalandoDeCarro",  # Falando de Carro
-    "jorgemoraes",  # Jorge Moraes
+    "Autoranking",  # Jorge Moraes
     "oloopinfinito",  # Junior Nannetti
     "RevistaMotoAdventureOficial"   # MotoAdventure
 ]
 
 # Palavra-chave de busca
-KEYWORD = "BMW"
+KEYWORD = "BMW, BMW M, BMW M3, BMW M4, BMW M5, BMW M8, BMW X1, BMW X2, BMW X3, BMW X4, BMW X5, BMW X6, BMW X7"
 
 class YouTubeClient:
     """Cliente para interagir com a API do YouTube."""
@@ -103,8 +103,8 @@ class YouTubeClient:
             uploads_playlist_id = channel_response['items'][0]['contentDetails']['relatedPlaylists']['uploads']
             videos = []
             next_page_token = None
-            max_results = 50
-            max_pages = 2  # Limite de páginas a buscar
+            max_results = 100
+            max_pages = 3  # Limite de páginas a buscar
             
             for _ in range(max_pages):
                 playlist_response = self.youtube.playlistItems().list(
@@ -144,16 +144,16 @@ class YouTubeClient:
             logger.error(f"Erro na API do YouTube para canal {channel_id}: {e}")
             return []
         except Exception as e:
-            logger.error(f"Erro inesperado para canal {channel_id}: {e}")
+            logger.info(f"Não foi possível encontrar novos vídeos sobre 'BMW' no canal {channel_id}: {e}")
             return []
 
     def is_within_period(self, published_at: str) -> bool:
         """
         Verifica se o vídeo foi publicado nos últimos 15 dias.
-        
+
         Args:
             published_at: Data de publicação do vídeo
-                
+
         Returns:
             True se o vídeo foi publicado nos últimos 15 dias, caso contrário False.
         """
@@ -161,9 +161,9 @@ class YouTubeClient:
         published_date = datetime.datetime.fromisoformat(published_at.replace('Z', '+00:00'))
         # Obtém a data atual com o timezone UTC
         now = datetime.datetime.now(datetime.timezone.utc)
-        
+
         # Verifica se a data de publicação é maior ou igual a 15 dias atrás
-        return published_date >= now - datetime.timedelta(days=15)
+        return published_date >= now - datetime.timedelta(days=20)
 
 def build_video_info(video_response, channel_id, title, description):
     """Constrói um dicionário com informações do vídeo a partir da resposta da API."""
@@ -256,7 +256,7 @@ def print_results_summary(videos: List[Dict[str, Any]]):
         return
     
     print(f"\n{'=' * 80}")
-    print(f"Encontrados {len(videos)} vídeos com a palavra-chave 'BMW' nos últimos 15 dias.")
+    print(f"Encontrados {len(videos)} vídeos com a palavra-chave 'BMW' no período solicitado.")
     print(f"{'=' * 80}\n")
     
     for i, video in enumerate(videos[:10]):
