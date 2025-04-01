@@ -36,7 +36,6 @@ canais_ids = [
     "UCihpiVo-4lH-6sdnJ-msw9Q",  # Acelerados
 ]
 
-# Exemplo de uso
 resultados = buscar_videos_canais(canais_ids, "BMW")
 for video in resultados:
     print(f"Título: {video['titulo']}")
