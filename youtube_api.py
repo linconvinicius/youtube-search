@@ -22,36 +22,36 @@ API_KEY = os.getenv('YOUTUBE_API_KEY')
 
 # Lista de canais pré-cadastrados (IDs dos canais)
 CHANNELS = [
-    "https://www.youtube.com/@quatrorodas/featured",  # Quatro Rodas
-    "https://www.youtube.com/@Autoesporte/featured",  # Autoesporte
-    "https://www.youtube.com/@motor1brasil/featured",  # Motor1
-    "https://www.youtube.com/@automaisoficial/featured",  # AutoMais
-    "https://www.youtube.com/@webmotors/featured",  # Webmotors
-    "https://www.youtube.com/@Acelerados/featured",  # Acelerados
-    "https://www.youtube.com/@decaronacomleandro/featured",  # De carona com Leandro
-    "https://www.youtube.com/@Macchina/featured",  # Macchina
-    "https://www.youtube.com/@duasrodasbr/featured",  # Duas Rodas
-    "https://www.youtube.com/@motociclismoonline/featured",  # Motociclismo
-    "https://www.youtube.com/@FullpowerTV/featured",  # FullpowerTV
-    "https://www.youtube.com/@UltimaMarcha/featured",  # Última Marcha
-    "https://www.youtube.com/@FlatOutBrasil/featured",  # FlatOut!
-    "https://www.youtube.com/@CanalMotoPlay/featured",  # MotoPLAY
-    "https://www.youtube.com/@Vansfaria/featured",  # Vans Faria
-    "https://www.youtube.com/@OntheRoadBr/featured",  # Rafaela Borges
-    "https://www.youtube.com/@pilotoleandromello/featured",  # Leandro Mello
-    "https://www.youtube.com/@ARodaTV/featured",  # A Roda
-    "https://www.youtube.com/@CarroChefe/featured",  # Carro Chefe
-    "https://www.youtube.com/@CassioCortes/featured",  # Cassio Cortes
-    "https://www.youtube.com/@durvalcareca/featured",  # Durval Careca
-    "https://www.youtube.com/@MinutoMotor/featured",  # Minuto Motor
-    "https://www.youtube.com/@EstadaoMobilidade/featured",  # Mobilidade Estadão
-    "https://www.youtube.com/@AutoPapo/featured",  # AutoPapo
-    "https://www.youtube.com/@garagemdobellotetv/featured",  # Garagem do Bellote
-    "https://www.youtube.com/@KS1951/featured",  # Karina Simões
-    "https://www.youtube.com/FalandoDeCarro/featured",  # Falando de Carro
-    "https://www.youtube.com/jorgemoraes/featured",  # Jorge Moraes
-    "https://www.youtube.com/@oloopinfinito/featured",  # Junior Nannetti
-    "https://www.youtube.com/@RevistaMotoAdventureOficial/featured"   # MotoAdventure
+    "quatrorodas",  # Quatro Rodas
+    "Autoesporte",  # Autoesporte
+    "motor1brasil",  # Motor1
+    "automaisoficial",  # AutoMais
+    "webmotors",  # Webmotors
+    "Acelerados",  # Acelerados
+    "decaronacomleandro",  # De carona com Leandro
+    "Macchina",  # Macchina
+    "duasrodasbr",  # Duas Rodas
+    "motociclismoonline",  # Motociclismo
+    "FullpowerTV",  # FullpowerTV
+    "UltimaMarcha",  # Última Marcha
+    "FlatOutBrasil",  # FlatOut!
+    "CanalMotoPlay",  # MotoPLAY
+    "Vansfaria",  # Vans Faria
+    "OntheRoadBr",  # Rafaela Borges
+    "pilotoleandromello",  # Leandro Mello
+    "ARodaTV",  # A Roda
+    "CarroChefe",  # Carro Chefe
+    "CassioCortes",  # Cassio Cortes
+    "durvalcareca",  # Durval Careca
+    "MinutoMotor",  # Minuto Motor
+    "EstadaoMobilidade",  # Mobilidade Estadão
+    "AutoPapo",  # AutoPapo
+    "garagemdobellotetv",  # Garagem do Bellote
+    "KS1951",  # Karina Simões
+    "FalandoDeCarro",  # Falando de Carro
+    "jorgemoraes",  # Jorge Moraes
+    "oloopinfinito",  # Junior Nannetti
+    "RevistaMotoAdventureOficial"   # MotoAdventure
 ]
 
 # Palavra-chave de busca
@@ -82,7 +82,7 @@ class YouTubeClient:
     
     async def get_channel_videos(self, channel_id: str) -> List[Dict[str, Any]]:
         """
-        Obtém vídeos de um canal específico e filtra os que contêm a palavra-chave.
+        Obtém vídeos de um canal específico e filtra os que contêm a palavra-chave e estão no período de 15 dias.
         
         Args:
             channel_id: ID do canal do YouTube
@@ -91,26 +91,20 @@ class YouTubeClient:
             Lista de vídeos que contêm a palavra-chave
         """
         try:
-            # Obtém os uploads do canal
             channel_response = self.youtube.channels().list(
                 part="contentDetails",
-                id=channel_id
+                forUsername=channel_id  # alterando de id para forUsername
             ).execute()
             
             if not channel_response['items']:
                 logger.warning(f"Canal não encontrado: {channel_id}")
                 return []
             
-            # Obtém a ID da playlist de uploads
             uploads_playlist_id = channel_response['items'][0]['contentDetails']['relatedPlaylists']['uploads']
-            
-            # Obtém os vídeos da playlist de uploads
             videos = []
             next_page_token = None
-            
-            # Limite para não exceder cota da API
             max_results = 50
-            max_pages = 2  # Ajuste conforme necessário
+            max_pages = 2  # Limite de páginas a buscar
             
             for _ in range(max_pages):
                 playlist_response = self.youtube.playlistItems().list(
@@ -120,54 +114,30 @@ class YouTubeClient:
                     pageToken=next_page_token
                 ).execute()
                 
-                # Filtra vídeos que contêm a palavra-chave no título ou descrição
                 for item in playlist_response['items']:
                     title = item['snippet']['title']
                     description = item['snippet'].get('description', '')
+                    published_at = item['snippet']['publishedAt']
                     
-                    if KEYWORD.lower() in title.lower() or KEYWORD.lower() in description.lower():
-                        video_id = item['contentDetails']['videoId']
+                    # Verifica se o vídeo contém a palavra-chave e está dentro do período de 15 dias
+                    if (KEYWORD.lower() in title.lower() or KEYWORD.lower() in description.lower()) and self.is_within_period(published_at):
                         
-                        # Obtém estatísticas detalhadas do vídeo
+                        video_id = item['contentDetails']['videoId']
                         video_response = self.youtube.videos().list(
                             part="statistics,snippet",
                             id=video_id
                         ).execute()
-                        
+
                         if video_response['items']:
-                            video_stats = video_response['items'][0]['statistics']
-                            video_snippet = video_response['items'][0]['snippet']
-                            
-                            # Formata a data de publicação
-                            published_at = video_snippet['publishedAt']
-                            published_at_formatted = datetime.datetime.fromisoformat(
-                                published_at.replace('Z', '+00:00')
-                            ).strftime('%Y-%m-%d %H:%M:%S')
-                            
-                            # Constrói o objeto do vídeo com informações relevantes
-                            video_info = {
-                                'video_id': video_id,
-                                'title': title,
-                                'channel_id': channel_id,
-                                'channel_title': video_snippet['channelTitle'],
-                                'published_at': published_at_formatted,
-                                'view_count': int(video_stats.get('viewCount', 0)),
-                                'like_count': int(video_stats.get('likeCount', 0)),
-                                'comment_count': int(video_stats.get('commentCount', 0)),
-                                'description': description,
-                                'url': f"https://www.youtube.com/watch?v={video_id}"
-                            }
-                            
+                            video_info = build_video_info(video_response, channel_id, title, description)
                             videos.append(video_info)
-                
-                # Verifica se há mais páginas
+
                 next_page_token = playlist_response.get('nextPageToken')
                 if not next_page_token:
                     break
                 
-                # Pausa para não ultrapassar limites de taxa
-                await asyncio.sleep(0.5)
-                
+                await asyncio.sleep(0.5)  # Pausa para evitar limite de taxa
+            
             return videos
             
         except HttpError as e:
@@ -176,6 +146,46 @@ class YouTubeClient:
         except Exception as e:
             logger.error(f"Erro inesperado para canal {channel_id}: {e}")
             return []
+
+    def is_within_period(self, published_at: str) -> bool:
+        """
+        Verifica se o vídeo foi publicado nos últimos 15 dias.
+        
+        Args:
+            published_at: Data de publicação do vídeo
+                
+        Returns:
+            True se o vídeo foi publicado nos últimos 15 dias, caso contrário False.
+        """
+        # Converte a data de publicação que tem timezone para um objeto datetime c/ timezone
+        published_date = datetime.datetime.fromisoformat(published_at.replace('Z', '+00:00'))
+        # Obtém a data atual com o timezone UTC
+        now = datetime.datetime.now(datetime.timezone.utc)
+        
+        # Verifica se a data de publicação é maior ou igual a 15 dias atrás
+        return published_date >= now - datetime.timedelta(days=15)
+
+def build_video_info(video_response, channel_id, title, description):
+    """Constrói um dicionário com informações do vídeo a partir da resposta da API."""
+    video_stats = video_response['items'][0]['statistics']
+    video_snippet = video_response['items'][0]['snippet']
+    
+    published_at_formatted = datetime.datetime.fromisoformat(
+        video_snippet['publishedAt'].replace('Z', '+00:00')
+    ).strftime('%Y-%m-%d %H:%M:%S')
+    
+    return {
+        'video_id': video_response['items'][0]['id'],
+        'title': title,
+        'channel_id': channel_id,
+        'channel_title': video_snippet['channelTitle'],
+        'published_at': published_at_formatted,
+        'view_count': int(video_stats.get('viewCount', 0)),
+        'like_count': int(video_stats.get('likeCount', 0)),
+        'comment_count': int(video_stats.get('commentCount', 0)),
+        'description': description,
+        'url': f"https://www.youtube.com/watch?v={video_response['items'][0]['id']}"
+    }
 
 async def search_all_channels(api_key: str, channels: List[str]) -> List[Dict[str, Any]]:
     """
@@ -191,17 +201,12 @@ async def search_all_channels(api_key: str, channels: List[str]) -> List[Dict[st
     all_videos = []
     
     async with YouTubeClient(api_key) as client:
-        # Cria tasks para buscar vídeos de cada canal
         tasks = [client.get_channel_videos(channel_id) for channel_id in channels]
-        
-        # Executa todas as tasks concorrentemente
         results = await asyncio.gather(*tasks)
         
-        # Combina os resultados
         for videos in results:
             all_videos.extend(videos)
     
-    # Ordena por data de publicação (mais recentes primeiro)
     all_videos.sort(key=lambda x: x['published_at'], reverse=True)
     
     return all_videos
@@ -218,11 +223,9 @@ def save_results_to_csv(videos: List[Dict[str, Any]], filename: str = "bmw_video
         logger.warning("Nenhum vídeo encontrado para salvar no CSV.")
         return
 
-    # Obtém o diretório do script
     script_dir = os.path.dirname(os.path.abspath(__file__))
     file_path = os.path.join(script_dir, filename)
 
-    # Define os campos para o CSV
     fieldnames = [
         'video_id', 'title', 'channel_title', 'published_at', 
         'view_count', 'like_count', 'comment_count', 'url'
@@ -231,11 +234,8 @@ def save_results_to_csv(videos: List[Dict[str, Any]], filename: str = "bmw_video
     try:
         with open(file_path, 'w', newline='', encoding='utf-8') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-
-            # Escreve o cabeçalho
             writer.writeheader()
 
-            # Escreve os dados
             for video in videos:
                 row = {field: video.get(field, '') for field in fieldnames}
                 writer.writerow(row)
@@ -256,11 +256,11 @@ def print_results_summary(videos: List[Dict[str, Any]]):
         return
     
     print(f"\n{'=' * 80}")
-    print(f"Encontrados {len(videos)} vídeos com a palavra-chave 'BMW'")
+    print(f"Encontrados {len(videos)} vídeos com a palavra-chave 'BMW' nos últimos 15 dias.")
     print(f"{'=' * 80}\n")
     
-    for i, video in enumerate(videos[:10], 1):  # Mostra apenas os 10 primeiros
-        print(f"{i}. {video['title']}")
+    for i, video in enumerate(videos[:10]):
+        print(f"{i + 1}. {video['title']}")
         print(f"   Canal: {video['channel_title']}")
         print(f"   Publicado em: {video['published_at']}")
         print(f"   Visualizações: {video['view_count']:,}")
@@ -277,23 +277,19 @@ async def main():
         print("Por favor, defina a variável de ambiente YOUTUBE_API_KEY ou crie um arquivo .env")
         return
     
-    print(f"Buscando vídeos sobre 'BMW' em {len(CHANNELS)} canais...")
+    print(f"Buscando vídeos sobre 'BMW' em {len(CHANNELS)} canais nos últimos 15 dias...")
     
-    # Mede o tempo de execução
     start_time = datetime.datetime.now()
     
-    # Busca vídeos em todos os canais
     videos = await search_all_channels(API_KEY, CHANNELS)
     
-    # Calcula o tempo de execução
     execution_time = (datetime.datetime.now() - start_time).total_seconds()
     
-    # Salva em CSV e imprime resultados
     save_results_to_csv(videos)
     print_results_summary(videos)
     
-    print(f"\nBusca concluída em {execution_time:.2f} segundos")
-    print(f"Os resultados foram salvos no arquivo 'bmw_videos.csv'")
+    print(f"\nBusca concluída em {execution_time:.2f} segundos.")
+    print(f"Os resultados foram salvos no arquivo 'bmw_videos.csv'.")
 
 if __name__ == "__main__":
     asyncio.run(main())
